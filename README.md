@@ -11,7 +11,7 @@ Features:
 
 ```bash
 pip install -r requirements.txt
-python GPT_CMD.py [--headless] [--save-file chat.txt]
+python GPT_CMD.py 
 ```
 
 Login to ChatGPT in the browser when prompted. Questions are asked via the terminal.
