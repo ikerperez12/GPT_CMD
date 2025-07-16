@@ -8,9 +8,9 @@ Licensed under the Apache License, Version 2.0. See the LICENSE file
 for details.
 """
 
-import argparse
 import os
 import time
+from typing import Optional
 
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -19,24 +19,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from rich.console import Console
 from rich.text import Text
+import pyperclip
 
 console = Console()
-
-
-def get_args():
-    """Return parsed command-line arguments."""
-    parser = argparse.ArgumentParser(description="Interact with ChatGPT from the terminal")
-    parser.add_argument(
-        "--headless",
-        action="store_true",
-        help="Run Chrome in headless mode"
-    )
-    parser.add_argument(
-        "--save-file",
-        type=str,
-        help="Optional path to save the conversation"
-    )
-    return parser.parse_args()
 
 
 def iniciar_navegador(headless: bool = False):
@@ -51,6 +36,15 @@ def iniciar_navegador(headless: bool = False):
     driver = uc.Chrome(options=options, use_subprocess=True)
     driver.get("https://chatgpt.com")
     return driver
+
+
+def configurar() -> tuple[bool, Optional[str]]:
+    """Interactively ask the user how to start the session."""
+    head = input("¿Ejecutar en modo headless? (s/N): ").strip().lower() == "s"
+    save_file: Optional[str] = None
+    if input("¿Guardar la conversación en un archivo? (s/N): ").strip().lower() == "s":
+        save_file = input("Ruta del archivo: ").strip() or None
+    return head, save_file
 
 def enviar_pregunta(driver, pregunta):
     try:
@@ -73,24 +67,48 @@ def imprimir_respuesta(texto: str) -> None:
     rich_text = Text(texto)
     console.print(rich_text)
 
+def mostrar_historia(history):
+    for i, (q, r) in enumerate(history, 1):
+        console.print(f"{i}. Q: {q}\n   A: {r}\n")
+
+
 def main():
-    args = get_args()
-    driver = iniciar_navegador(args.headless)
-    history = []
+    headless, save_file = configurar()
+    driver = iniciar_navegador(headless)
+    history: list[tuple[str, str]] = []
 
     print("[INFO] Si ves login o captcha, resuélvelo en el navegador.")
     input("[MANUAL] Pulsa ENTER cuando puedas escribir en el prompt...\n")
 
     try:
         while True:
-            pregunta = input(">> Pregunta ('salir' o 'historia'): ").strip()
+            print("\nMenú:\n1. Preguntar\n2. Ver historia\n3. Borrar historia\n4. Copiar última respuesta\n5. Salir")
+            opcion = input("Selecciona opción: ").strip()
 
-            if pregunta.lower() == "salir":
+            if opcion == "5":
                 break
+            elif opcion == "2":
+                mostrar_historia(history)
+                continue
+            elif opcion == "3":
+                history.clear()
+                if save_file:
+                    open(save_file, "w").close()
+                print("[INFO] Historia borrada.")
+                continue
+            elif opcion == "4":
+                if history:
+                    pyperclip.copy(history[-1][1])
+                    print("[INFO] Última respuesta copiada al portapapeles.")
+                else:
+                    print("[WARN] No hay respuestas para copiar.")
+                continue
+            elif opcion != "1":
+                print("[WARN] Opción no reconocida.")
+                continue
 
-            if pregunta.lower() == "historia":
-                for i, (q, r) in enumerate(history, 1):
-                    console.print(f"{i}. Q: {q}\n   A: {r}\n")
+            pregunta = input("Escribe tu pregunta: ").strip()
+            if not pregunta:
                 continue
 
             start = time.time()
@@ -103,8 +121,8 @@ def main():
 
             history.append((pregunta, respuesta))
 
-            if args.save_file:
-                with open(args.save_file, "a", encoding="utf-8") as f:
+            if save_file:
+                with open(save_file, "a", encoding="utf-8") as f:
                     f.write(f"Q: {pregunta}\nA: {respuesta}\n\n")
     except KeyboardInterrupt:
         print("\n[INFO] Sesión interrumpida por el usuario.")
