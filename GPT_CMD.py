@@ -1,3 +1,13 @@
+"""Command line interface to interact with ChatGPT via a browser.
+
+This script starts Chrome in incognito mode so that no browsing data
+or credentials are persisted. It prints responses to the terminal only
+and stores no conversation history.
+
+Licensed under the Apache License, Version 2.0. See the LICENSE file
+for details.
+"""
+
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -14,6 +24,8 @@ def iniciar_navegador():
     options.add_argument("--start-maximized")
     options.add_argument("--no-first-run --no-service-autorun --password-store=basic")
     options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--incognito")
+    options.add_argument("--disable-notifications")
     driver = uc.Chrome(options=options, use_subprocess=True)
     driver.get("https://chatgpt.com")
     return driver
@@ -43,17 +55,20 @@ def main():
     print("[INFO] Si ves login o captcha, resuélvelo en el navegador.")
     input("[MANUAL] Pulsa ENTER cuando puedas escribir en el prompt...\n")
 
-    while True:
-        pregunta = input(">> Pregunta ('salir' para terminar): ").strip()
-        if pregunta.lower() == "salir":
-            break
+    try:
+        while True:
+            pregunta = input(">> Pregunta ('salir' para terminar): ").strip()
+            if pregunta.lower() == "salir":
+                break
 
-        respuesta = enviar_pregunta(driver, pregunta)
-        print("\n--- CMD response ---\n")
-        imprimir_respuesta(respuesta)
-        print("\n----XXXX----\n")
-
-    driver.quit()
+            respuesta = enviar_pregunta(driver, pregunta)
+            print("\n--- CMD response ---\n")
+            imprimir_respuesta(respuesta)
+            print("\n----XXXX----\n")
+    except KeyboardInterrupt:
+        print("\n[INFO] Sesión interrumpida por el usuario.")
+    finally:
+        driver.quit()
 
 if __name__ == "__main__":
     main()
