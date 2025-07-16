@@ -10,6 +10,8 @@ for details.
 
 import time
 from typing import Optional, List
+import os
+import tempfile
 
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -19,6 +21,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from rich.console import Console
 from rich.text import Text
 import pyperclip
+from PIL import ImageGrab, Image
 
 console = Console()
 
@@ -108,6 +111,43 @@ def copiar_historia(history: List[tuple[str, str]]) -> None:
         print("[WARN] No hay historial para copiar.")
 
 
+def obtener_imagen_clipboard() -> Optional[str]:
+    """Save an image from the clipboard to a temporary file and return the path."""
+    try:
+        img = ImageGrab.grabclipboard()
+    except Exception as e:
+        console.print(f"[WARN] No se pudo acceder al portapapeles: {e}")
+        return None
+    if not isinstance(img, Image.Image):
+        console.print("[WARN] No hay una imagen en el portapapeles.")
+        return None
+    ruta = os.path.join(tempfile.gettempdir(), "gpt_clipboard.png")
+    img.save(ruta, "PNG")
+    return ruta
+
+
+def enviar_imagen_clipboard(driver) -> str:
+    """Upload an image from the clipboard to ChatGPT."""
+    ruta = obtener_imagen_clipboard()
+    if not ruta:
+        return "[Sin imagen]"
+    try:
+        wait = WebDriverWait(driver, 60)
+        caja = wait.until(EC.element_to_be_clickable((By.ID, "prompt-textarea")))
+        attach = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
+        attach.send_keys(ruta)
+        caja.send_keys(Keys.RETURN)
+        wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.markdown")))
+        time.sleep(2)
+        respuestas = driver.find_elements(By.CSS_SELECTOR, "div.markdown")
+        return respuestas[-1].text.strip() if respuestas else "[Sin respuesta]"
+    except Exception as e:
+        return f"[ERROR] {e}"
+    finally:
+        if os.path.exists(ruta):
+            os.remove(ruta)
+
+
 def main():
     headless, save_file, prompts_path = configurar()
     driver = iniciar_navegador(headless)
@@ -141,11 +181,12 @@ def main():
                 "5. Copiar historial\n"
                 "6. Buscar en historia\n"
                 "7. Exportar historia\n"
-                "8. Salir"
+                "8. Enviar imagen del portapapeles\n"
+                "9. Salir"
             )
             opcion = input("Selecciona opción: ").strip()
 
-            if opcion == "8":
+            if opcion == "9":
                 break
             elif opcion == "2":
                 mostrar_historia(history)
@@ -178,6 +219,16 @@ def main():
                     print(f"[INFO] Historial exportado a {ruta}.")
                 else:
                     print("[WARN] Ruta no válida.")
+                continue
+            elif opcion == "8":
+                start = time.time()
+                respuesta = enviar_imagen_clipboard(driver)
+                dur = time.time() - start
+                imprimir_respuesta(respuesta)
+                history.append(("[Imagen]", respuesta))
+                if save_file:
+                    with open(save_file, "a", encoding="utf-8") as f:
+                        f.write(f"Imagen enviada\nA: {respuesta}\n\n")
                 continue
             elif opcion != "1":
                 print("[WARN] Opción no reconocida.")

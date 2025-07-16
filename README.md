@@ -9,6 +9,7 @@ Features:
 - Search messages in the current session
 - Export history to a Markdown file
 - Optional batch mode loading questions from a text file
+- Send an image from the clipboard directly to ChatGPT
 
 ## Usage
 
@@ -17,12 +18,14 @@ pip install -r requirements.txt
 python GPT_CMD.py
 ```
 
+`pillow` is required for clipboard image support.
+
 Login to ChatGPT in the browser when prompted. Questions are asked via the terminal.
 
 Follow the prompts to configure the session. During execution use the menu to
-ask questions, show or clear history, copy answers, search messages or export
-the conversation. You can also provide a file with predefined questions to run
-them automatically at startup.
+ask questions, show or clear history, copy answers, search messages, export the
+conversation or send an image from your clipboard. You can also provide a file
+with predefined questions to run them automatically at startup.
 
 ## Data Protection
 
