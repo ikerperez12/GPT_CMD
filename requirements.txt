@@ -1,3 +1,7 @@
 undetected-chromedriver
 selenium
 rich
+pyperclip
+pillow
+requests
+
