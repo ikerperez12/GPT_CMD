@@ -22,6 +22,12 @@ python GPT_CMD.py
 `pillow` is required for clipboard image support. `requests` is used to send
 notifications via the Telegram bot.
 
+### Telegram setup
+
+To keep your bot token private, store it in an environment variable named
+`TELEGRAM_TOKEN` or in a file called `.telegram_token` next to `GPT_CMD.py`.
+The file is ignored by Git, so it won't be committed.
+
 Login to ChatGPT in the browser when prompted. Questions are asked via the terminal.
 
 Follow the prompts to configure the session. During execution use the menu to

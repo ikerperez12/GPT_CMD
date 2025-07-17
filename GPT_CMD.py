@@ -14,6 +14,8 @@ import os
 import tempfile
 import requests
 
+TOKEN_FILE = os.path.join(os.path.dirname(__file__), ".telegram_token")
+
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -26,13 +28,24 @@ from PIL import ImageGrab, Image
 
 console = Console()
 
-# Token del bot de Telegram proporcionado por el usuario
-TELEGRAM_TOKEN = "7616591370:AAElNCZo-J49ICs5czesx36ERiUIEGDfOJ4"
+
+def cargar_token() -> Optional[str]:
+    """Return the Telegram bot token from env or a local file."""
+    token = os.getenv("TELEGRAM_TOKEN")
+    if token:
+        return token.strip()
+    if os.path.isfile(TOKEN_FILE):
+        try:
+            with open(TOKEN_FILE, encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception as e:
+            console.print(f"[WARN] No se pudo leer {TOKEN_FILE}: {e}")
+    return None
 
 
-def enviar_telegram(chat_id: str, mensaje: str) -> None:
+def enviar_telegram(token: str, chat_id: str, mensaje: str) -> None:
     """Send a message to a Telegram chat."""
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
     try:
         requests.post(url, data={"chat_id": chat_id, "text": mensaje})
     except Exception as e:
@@ -53,7 +66,7 @@ def iniciar_navegador(headless: bool = False):
     return driver
 
 
-def configurar() -> tuple[bool, Optional[str], Optional[str], bool, Optional[str]]:
+def configurar() -> tuple[bool, Optional[str], Optional[str], bool, Optional[str], Optional[str]]:
     """Interactively ask the user how to start the session."""
     head = input("¿Ejecutar en modo headless? (s/N): ").strip().lower() == "s"
     save_file: Optional[str] = None
@@ -64,9 +77,13 @@ def configurar() -> tuple[bool, Optional[str], Optional[str], bool, Optional[str
         prompts_file = input("Ruta del archivo de preguntas: ").strip() or None
     notificar = input("¿Enviar respuestas por Telegram? (s/N): ").strip().lower() == "s"
     chat_id: Optional[str] = None
+    token: Optional[str] = None
     if notificar:
         chat_id = input("Chat ID de Telegram: ").strip() or None
-    return head, save_file, prompts_file, notificar, chat_id
+        token = cargar_token()
+        if not token:
+            token = input("Token del bot de Telegram: ").strip() or None
+    return head, save_file, prompts_file, notificar, chat_id, token
 
 def enviar_pregunta(driver, pregunta):
     try:
@@ -166,7 +183,7 @@ def enviar_imagen_clipboard(driver) -> str:
 
 
 def main():
-    headless, save_file, prompts_path, notif_tel, chat_id = configurar()
+    headless, save_file, prompts_path, notif_tel, chat_id, token = configurar()
     driver = iniciar_navegador(headless)
     history: List[tuple[str, str]] = []
 
@@ -183,8 +200,8 @@ def main():
         imprimir_respuesta(respuesta)
         print(f"\n[INFO] Tiempo de respuesta: {dur:.1f}s\n----XXXX----\n")
         history.append((pregunta, respuesta))
-        if notif_tel and chat_id:
-            enviar_telegram(chat_id, respuesta)
+        if notif_tel and chat_id and token:
+            enviar_telegram(token, chat_id, respuesta)
         if save_file:
             with open(save_file, "a", encoding="utf-8") as f:
                 f.write(f"Q: {pregunta}\nA: {respuesta}\n\n")
@@ -245,8 +262,8 @@ def main():
                 dur = time.time() - start
                 imprimir_respuesta(respuesta)
                 history.append(("[Imagen]", respuesta))
-                if notif_tel and chat_id:
-                    enviar_telegram(chat_id, respuesta)
+                if notif_tel and chat_id and token:
+                    enviar_telegram(token, chat_id, respuesta)
                 if save_file:
                     with open(save_file, "a", encoding="utf-8") as f:
                         f.write(f"Imagen enviada\nA: {respuesta}\n\n")
@@ -268,8 +285,8 @@ def main():
             print(f"\n[INFO] Tiempo de respuesta: {dur:.1f}s\n----XXXX----\n")
 
             history.append((pregunta, respuesta))
-            if notif_tel and chat_id:
-                enviar_telegram(chat_id, respuesta)
+            if notif_tel and chat_id and token:
+                enviar_telegram(token, chat_id, respuesta)
 
             if save_file:
                 with open(save_file, "a", encoding="utf-8") as f:
