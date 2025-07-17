@@ -16,8 +16,6 @@ import requests
 
 TOKEN_FILE = os.path.join(os.path.dirname(__file__), ".telegram_token")
 import argparse
-import os
-import time
 
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -50,7 +48,7 @@ def enviar_telegram(token: str, chat_id: str, mensaje: str) -> None:
     """Send a message to a Telegram chat."""
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     try:
-        requests.post(url, data={"chat_id": chat_id, "text": mensaje})
+        requests.post(url, data={"chat_id": chat_id, "text": mensaje}, timeout=10)
     except Exception as e:
         console.print(f"[WARN] No se pudo enviar a Telegram: {e}")
 
@@ -201,14 +199,19 @@ def enviar_imagen_clipboard(driver) -> str:
 
 
 def main():
+    args = get_args()
     headless, save_file, prompts_path, notif_tel, chat_id, token = configurar()
+
+    # Command line arguments override interactive settings
+    if args.headless:
+        headless = True
+    if args.save_file:
+        save_file = args.save_file
+
     driver = iniciar_navegador(headless)
     history: List[tuple[str, str]] = []
 
     prompts: List[str] = cargar_prompts(prompts_path) if prompts_path else []
-    args = get_args()
-    driver = iniciar_navegador(args.headless)
-    history = []
 
     print("[INFO] Si ves login o captcha, resuélvelo en el navegador.")
     input("[MANUAL] Pulsa ENTER cuando puedas escribir en el prompt...\n")
@@ -241,6 +244,7 @@ def main():
                 "8. Enviar imagen del portapapeles\n"
                 "9. Salir"
             )
+
             opcion = input("Selecciona opción: ").strip()
 
             if opcion == "9":
@@ -295,16 +299,6 @@ def main():
 
             pregunta = input("Escribe tu pregunta: ").strip()
             if not pregunta:
-    try:
-        while True:
-            pregunta = input(">> Pregunta ('salir' o 'historia'): ").strip()
-
-            if pregunta.lower() == "salir":
-                break
-
-            if pregunta.lower() == "historia":
-                for i, (q, r) in enumerate(history, 1):
-                    console.print(f"{i}. Q: {q}\n   A: {r}\n")
                 continue
 
             start = time.time()
@@ -318,13 +312,8 @@ def main():
             history.append((pregunta, respuesta))
             if notif_tel and chat_id and token:
                 enviar_telegram(token, chat_id, respuesta)
-
             if save_file:
                 with open(save_file, "a", encoding="utf-8") as f:
-
-
-            if args.save_file:
-                with open(args.save_file, "a", encoding="utf-8") as f:
                     f.write(f"Q: {pregunta}\nA: {respuesta}\n\n")
     except KeyboardInterrupt:
         print("\n[INFO] Sesión interrumpida por el usuario.")
