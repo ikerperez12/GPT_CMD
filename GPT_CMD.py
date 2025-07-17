@@ -15,6 +15,9 @@ import tempfile
 import requests
 
 TOKEN_FILE = os.path.join(os.path.dirname(__file__), ".telegram_token")
+import argparse
+import os
+import time
 
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -50,6 +53,21 @@ def enviar_telegram(token: str, chat_id: str, mensaje: str) -> None:
         requests.post(url, data={"chat_id": chat_id, "text": mensaje})
     except Exception as e:
         console.print(f"[WARN] No se pudo enviar a Telegram: {e}")
+
+def get_args():
+    """Return parsed command-line arguments."""
+    parser = argparse.ArgumentParser(description="Interact with ChatGPT from the terminal")
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run Chrome in headless mode"
+    )
+    parser.add_argument(
+        "--save-file",
+        type=str,
+        help="Optional path to save the conversation"
+    )
+    return parser.parse_args()
 
 
 def iniciar_navegador(headless: bool = False):
@@ -188,6 +206,9 @@ def main():
     history: List[tuple[str, str]] = []
 
     prompts: List[str] = cargar_prompts(prompts_path) if prompts_path else []
+    args = get_args()
+    driver = iniciar_navegador(args.headless)
+    history = []
 
     print("[INFO] Si ves login o captcha, resuélvelo en el navegador.")
     input("[MANUAL] Pulsa ENTER cuando puedas escribir en el prompt...\n")
@@ -274,6 +295,16 @@ def main():
 
             pregunta = input("Escribe tu pregunta: ").strip()
             if not pregunta:
+    try:
+        while True:
+            pregunta = input(">> Pregunta ('salir' o 'historia'): ").strip()
+
+            if pregunta.lower() == "salir":
+                break
+
+            if pregunta.lower() == "historia":
+                for i, (q, r) in enumerate(history, 1):
+                    console.print(f"{i}. Q: {q}\n   A: {r}\n")
                 continue
 
             start = time.time()
@@ -290,6 +321,10 @@ def main():
 
             if save_file:
                 with open(save_file, "a", encoding="utf-8") as f:
+
+
+            if args.save_file:
+                with open(args.save_file, "a", encoding="utf-8") as f:
                     f.write(f"Q: {pregunta}\nA: {respuesta}\n\n")
     except KeyboardInterrupt:
         print("\n[INFO] Sesión interrumpida por el usuario.")
