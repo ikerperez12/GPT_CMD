@@ -30,6 +30,23 @@ from PIL import ImageGrab, Image
 console = Console()
 
 
+def sanitize_path(path: Optional[str]) -> Optional[str]:
+    """Strip surrounding quotes and expand user directory."""
+    if not path:
+        return None
+    path = path.strip().strip("\"'")
+    return os.path.expanduser(path)
+
+
+def append_to_file(path: str, text: str) -> None:
+    """Append text to a file, reporting errors."""
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(text)
+    except Exception as e:
+        console.print(f"[WARN] No se pudo escribir en {path}: {e}")
+
+
 def cargar_token() -> Optional[str]:
     """Return the Telegram bot token from env or a local file."""
     token = os.getenv("TELEGRAM_TOKEN")
@@ -87,10 +104,10 @@ def configurar() -> tuple[bool, Optional[str], Optional[str], bool, Optional[str
     head = input("¿Ejecutar en modo headless? (s/N): ").strip().lower() == "s"
     save_file: Optional[str] = None
     if input("¿Guardar la conversación en un archivo? (s/N): ").strip().lower() == "s":
-        save_file = input("Ruta del archivo: ").strip() or None
+        save_file = sanitize_path(input("Ruta del archivo: ").strip() or None)
     prompts_file: Optional[str] = None
     if input("¿Cargar preguntas desde un archivo? (s/N): ").strip().lower() == "s":
-        prompts_file = input("Ruta del archivo de preguntas: ").strip() or None
+        prompts_file = sanitize_path(input("Ruta del archivo de preguntas: ").strip() or None)
     notificar = input("¿Enviar respuestas por Telegram? (s/N): ").strip().lower() == "s"
     chat_id: Optional[str] = None
     token: Optional[str] = None
@@ -139,6 +156,9 @@ def cargar_prompts(ruta: str) -> List[str]:
 
 def exportar_historia(history: List[tuple[str, str]], ruta: str) -> None:
     """Save the conversation to a Markdown file."""
+    ruta = sanitize_path(ruta)
+    if not ruta:
+        raise ValueError("Ruta no válida")
     with open(ruta, "w", encoding="utf-8") as f:
         f.write("# Conversación\n\n")
         for q, r in history:
@@ -206,11 +226,12 @@ def main():
     if args.headless:
         headless = True
     if args.save_file:
-        save_file = args.save_file
+        save_file = sanitize_path(args.save_file)
 
     driver = iniciar_navegador(headless)
     history: List[tuple[str, str]] = []
 
+    prompts_path = sanitize_path(prompts_path)
     prompts: List[str] = cargar_prompts(prompts_path) if prompts_path else []
 
     print("[INFO] Si ves login o captcha, resuélvelo en el navegador.")
@@ -227,8 +248,7 @@ def main():
         if notif_tel and chat_id and token:
             enviar_telegram(token, chat_id, respuesta)
         if save_file:
-            with open(save_file, "a", encoding="utf-8") as f:
-                f.write(f"Q: {pregunta}\nA: {respuesta}\n\n")
+            append_to_file(save_file, f"Q: {pregunta}\nA: {respuesta}\n\n")
 
     try:
         while True:
@@ -255,7 +275,10 @@ def main():
             elif opcion == "3":
                 history.clear()
                 if save_file:
-                    open(save_file, "w").close()
+                    try:
+                        open(save_file, "w").close()
+                    except Exception as e:
+                        console.print(f"[WARN] No se pudo limpiar {save_file}: {e}")
                 print("[INFO] Historia borrada.")
                 continue
             elif opcion == "4":
@@ -274,7 +297,7 @@ def main():
                     console.print(f"Q: {q}\nA: {r}\n")
                 continue
             elif opcion == "7":
-                ruta = input("Archivo destino: ").strip()
+                ruta = sanitize_path(input("Archivo destino: ").strip())
                 if ruta:
                     exportar_historia(history, ruta)
                     print(f"[INFO] Historial exportado a {ruta}.")
@@ -290,8 +313,7 @@ def main():
                 if notif_tel and chat_id and token:
                     enviar_telegram(token, chat_id, respuesta)
                 if save_file:
-                    with open(save_file, "a", encoding="utf-8") as f:
-                        f.write(f"Imagen enviada\nA: {respuesta}\n\n")
+                    append_to_file(save_file, f"Imagen enviada\nA: {respuesta}\n\n")
                 continue
             elif opcion != "1":
                 print("[WARN] Opción no reconocida.")
@@ -313,8 +335,7 @@ def main():
             if notif_tel and chat_id and token:
                 enviar_telegram(token, chat_id, respuesta)
             if save_file:
-                with open(save_file, "a", encoding="utf-8") as f:
-                    f.write(f"Q: {pregunta}\nA: {respuesta}\n\n")
+                append_to_file(save_file, f"Q: {pregunta}\nA: {respuesta}\n\n")
     except KeyboardInterrupt:
         print("\n[INFO] Sesión interrumpida por el usuario.")
     finally:
