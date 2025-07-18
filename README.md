@@ -42,6 +42,9 @@ responses will be sent to your phone.
 Use the menu to view history, configure or disable Telegram, and optionally send
 the last reply to your chat. File paths may be entered with or without quotes;
 the script cleans them automatically.
+Use the menu to view history or exit. File paths may be entered with or without
+quotes; the script cleans them automatically.
+Use the menu to view history or exit.
 
 ## Data Protection
 
