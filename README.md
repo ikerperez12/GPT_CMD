@@ -40,6 +40,7 @@ If you enable Telegram notifications at startup, provide your chat ID and all
 responses will be sent to your phone.
 Use the menu to view history or exit. File paths may be entered with or without
 quotes; the script cleans them automatically.
+Use the menu to view history or exit.
 
 ## Data Protection
 

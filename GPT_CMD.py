@@ -228,6 +228,8 @@ def main():
     if args.save_file:
         save_file = sanitize_path(args.save_file)
 
+        save_file = args.save_file
+
     driver = iniciar_navegador(headless)
     history: List[tuple[str, str]] = []
 
@@ -336,6 +338,9 @@ def main():
                 enviar_telegram(token, chat_id, respuesta)
             if save_file:
                 append_to_file(save_file, f"Q: {pregunta}\nA: {respuesta}\n\n")
+
+                with open(save_file, "a", encoding="utf-8") as f:
+                    f.write(f"Q: {pregunta}\nA: {respuesta}\n\n")
     except KeyboardInterrupt:
         print("\n[INFO] Sesión interrumpida por el usuario.")
     finally:
