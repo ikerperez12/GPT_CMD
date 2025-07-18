@@ -11,8 +11,8 @@ Features:
 - Optional batch mode loading questions from a text file
 - Send an image from the clipboard directly to ChatGPT
 - Optionally forward every response to your phone via Telegram
+- Send the last response via Telegram from the menu
 - Optional headless mode via `--headless`.
-- View conversation history with the `historia` command.
 - Save the session to a file with `--save-file`.
 
 ## Usage
@@ -39,13 +39,9 @@ conversation or send an image from your clipboard. You can also provide a file
 with predefined questions to run them automatically at startup.
 If you enable Telegram notifications at startup, provide your chat ID and all
 responses will be sent to your phone.
-
-python GPT_CMD.py 
-```
-
-Login to ChatGPT in the browser when prompted. Questions are asked via the terminal.
-
-While running, you can type `historia` to print the current conversation or `salir` to exit.
+Use the menu to view history, configure or disable Telegram, and optionally send
+the last reply to your chat. File paths may be entered with or without quotes;
+the script cleans them automatically.
 
 ## Data Protection
 
@@ -53,8 +49,7 @@ While running, you can type `historia` to print the current conversation or `sal
 - Does not store login credentials or conversation history to disk.
 - Only console output is generated for responses. You may optionally choose to
   save the conversation in a file.
-- Only console output is generated for responses.
- - Optionally, you may specify `--save-file` to save your questions and responses to a text file.
+- Optionally, you may specify `--save-file` to save your questions and responses to a text file.
 
 ## Security Policy
 
