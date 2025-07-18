@@ -227,7 +227,6 @@ def main():
         headless = True
     if args.save_file:
         save_file = sanitize_path(args.save_file)
-
         save_file = args.save_file
 
     driver = iniciar_navegador(headless)
@@ -264,7 +263,9 @@ def main():
                 "6. Buscar en historia\n"
                 "7. Exportar historia\n"
                 "8. Enviar imagen del portapapeles\n"
-                "9. Salir"
+                "9. Salir\n"
+                "10. Configurar Telegram\n"
+                "11. Enviar última respuesta por Telegram"
             )
 
             opcion = input("Selecciona opción: ").strip()
@@ -316,6 +317,33 @@ def main():
                     enviar_telegram(token, chat_id, respuesta)
                 if save_file:
                     append_to_file(save_file, f"Imagen enviada\nA: {respuesta}\n\n")
+                continue
+            elif opcion == "10":
+                if notif_tel:
+                    desact = input("Desactivar notificaciones de Telegram? (s/N): ").strip().lower() == "s"
+                    if desact:
+                        notif_tel = False
+                        print("[INFO] Notificaciones de Telegram desactivadas.")
+                    continue
+                chat_id = input("Chat ID de Telegram: ").strip() or chat_id
+                token = token or cargar_token()
+                if not token:
+                    token = input("Token del bot de Telegram: ").strip() or None
+                if chat_id and token:
+                    notif_tel = True
+                    print("[INFO] Notificaciones de Telegram activadas.")
+                else:
+                    print("[WARN] Telegram no configurado correctamente.")
+                continue
+            elif opcion == "11":
+                if not history:
+                    print("[WARN] No hay respuestas para enviar.")
+                    continue
+                if not (chat_id and token):
+                    print("[WARN] Telegram no está configurado.")
+                    continue
+                enviar_telegram(token, chat_id, history[-1][1])
+                print("[INFO] Respuesta enviada por Telegram.")
                 continue
             elif opcion != "1":
                 print("[WARN] Opción no reconocida.")

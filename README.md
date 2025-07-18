@@ -11,6 +11,7 @@ Features:
 - Optional batch mode loading questions from a text file
 - Send an image from the clipboard directly to ChatGPT
 - Optionally forward every response to your phone via Telegram
+- Send the last response via Telegram from the menu
 - Optional headless mode via `--headless`.
 - Save the session to a file with `--save-file`.
 
@@ -38,6 +39,9 @@ conversation or send an image from your clipboard. You can also provide a file
 with predefined questions to run them automatically at startup.
 If you enable Telegram notifications at startup, provide your chat ID and all
 responses will be sent to your phone.
+Use the menu to view history, configure or disable Telegram, and optionally send
+the last reply to your chat. File paths may be entered with or without quotes;
+the script cleans them automatically.
 Use the menu to view history or exit. File paths may be entered with or without
 quotes; the script cleans them automatically.
 Use the menu to view history or exit.
